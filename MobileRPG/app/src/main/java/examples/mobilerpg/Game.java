@@ -1,6 +1,7 @@
 package examples.mobilerpg;
 
 import android.app.Activity;
+import android.opengl.GLSurfaceView;
 import android.os.Bundle;
 import android.view.Menu;
 import android.view.MenuItem;
@@ -9,15 +10,16 @@ import android.view.WindowManager;
 
 public class Game extends Activity {
 
+    private GLSurfaceView mGLView;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        //Turn Title off
-        requestWindowFeature(Window.FEATURE_NO_TITLE);
 
-        //Fullscreen
-        getWindow().setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN,WindowManager.LayoutParams.FLAG_FULLSCREEN);
-        setContentView(new GamePanel(this));
+        //create a GLSurfaceView instance and set it
+        //as the ContentView for this Activity
+        mGLView = new GamePanel(this);
+        setContentView(mGLView);
     }
 
     @Override
