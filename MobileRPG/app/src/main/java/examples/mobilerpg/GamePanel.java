@@ -1,6 +1,8 @@
 package examples.mobilerpg;
 
 import android.content.Context;
+import android.graphics.BitmapFactory;
+import android.graphics.Canvas;
 import android.view.MotionEvent;
 import android.view.SurfaceHolder;
 import android.view.SurfaceView;
@@ -10,7 +12,10 @@ import android.view.SurfaceView;
  */
 public class GamePanel extends SurfaceView implements SurfaceHolder.Callback {
     private MainThread thread;
-    private Background bg;
+    private Player player;
+    private final int HEIGHT = 846;
+    private final int WIDTH = 400;
+    public static final int MOVESPEED = -5;
     public GamePanel(Context context){
         super(context);
 
@@ -39,15 +44,44 @@ public class GamePanel extends SurfaceView implements SurfaceHolder.Callback {
         }
     }
     @Override
-    public void surfaceCreated(SurfaceHolder holer){
-    thread.setRunning(true);
+    public void surfaceCreated(SurfaceHolder holder){
+      player = new Player(BitmapFactory.decodeResource(getResources(), R.drawable.player),100,100,1);
+      thread.setRunning(true);
         thread.start();
     }
     @Override
     public boolean onTouchEvent(MotionEvent event){
+        if(event.getAction() == MotionEvent.ACTION_DOWN){
+            if(!player.getPlaying()){
+                player.setPlaying(true);
+            }
+            else {
+                player.setUp(true);
+            }
+            return true;
+        }
+        if(event.getAction() == MotionEvent.ACTION_UP){
+            player.setUp(false);
+            return true;
+        }
         return super.onTouchEvent(event);
     }
     public void update() {
+        if(player.getPlaying()){
+            player.update();
+        }
+    }
 
+    @Override
+    public void draw(Canvas canvas) {
+        super.draw(canvas);
+        final float scaleFactorX = getWidth()/(WIDTH*1.f);
+        final float scaleFactorY = getHeight()/(HEIGHT*1.f);
+        if(canvas != null) {
+            final int saveState = canvas.save();
+            canvas.scale(scaleFactorX, scaleFactorY);
+            player.draw(canvas);
+            canvas.restoreToCount(saveState);
+        }
     }
 }
