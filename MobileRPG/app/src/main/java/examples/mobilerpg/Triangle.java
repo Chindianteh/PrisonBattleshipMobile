@@ -1,6 +1,7 @@
 package examples.mobilerpg;
 
 import android.opengl.GLES20;
+import android.opengl.Matrix;
 
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
@@ -13,7 +14,10 @@ public class Triangle {
 
     private FloatBuffer vertexBuffer;
 
-    private final int mProgram;
+    private float[] position;
+    private float[] rotationM;//how to represent rotations?
+
+    private final int mProgram;//used to describe how render it out
 
     // number of coordinates per vertex in this array
     static final int COORDS_PER_VERTEX = 3;
@@ -45,6 +49,10 @@ public class Triangle {
 
 
     public Triangle() {
+        position = new float[3];
+        rotationM = new float[16];
+        Matrix.setIdentityM(rotationM, 0);
+
         // initialize vertex byte buffer for shape coordinates
         ByteBuffer bb = ByteBuffer.allocateDirect(
                 // (number of coordinate values * 4 bytes per float)
@@ -87,6 +95,9 @@ public class Triangle {
     private final int vertexStride = COORDS_PER_VERTEX * 4; // 4 bytes per vertex
 
     public void draw(float[] mvpMatrix) {
+        //transform matrix to show position and rotation
+        float[] localMvpM = updateMatrix(mvpMatrix);
+
         // Add program to OpenGL ES environment
         GLES20.glUseProgram(mProgram);
 
@@ -111,12 +122,36 @@ public class Triangle {
         mMVPMatrixHandle = GLES20.glGetUniformLocation(mProgram, "uMVPMatrix");
 
         //Pass the projection and view transformation to the shader
-        GLES20.glUniformMatrix4fv(mMVPMatrixHandle, 1, false, mvpMatrix, 0);
+        GLES20.glUniformMatrix4fv(mMVPMatrixHandle, 1, false, localMvpM, 0);
 
         // Draw the triangle
         GLES20.glDrawArrays(GLES20.GL_TRIANGLES, 0, vertexCount);
 
         // Disable vertex array <-- WHY DO WE NEED TO DO THIS?
         GLES20.glDisableVertexAttribArray(mPositionHandle);
+    }
+
+    public float[] updateMatrix(float[] mvpMatrix){
+        float[] scratch = new float[32];//we will have two matrices here
+        float[] toReturn = new float[16];
+
+        Matrix.setIdentityM(scratch, 0);
+        Matrix.translateM(scratch, 0, position[0], position[1], position[2]);
+
+        Matrix.multiplyMM(scratch, 16, mvpMatrix, 0, scratch, 0);
+
+        Matrix.multiplyMM(toReturn, 0, scratch, 16, rotationM, 0);
+
+        return toReturn;
+    }
+
+    public void set_position(float x, float y, float z){
+        position[0] = x;
+        position[1] = y;
+        position[2] = z;
+    }
+
+    public void set_rotation(float a, float x, float y, float z){
+        Matrix.setRotateM(rotationM, 0, a, x, y, z);
     }
 }

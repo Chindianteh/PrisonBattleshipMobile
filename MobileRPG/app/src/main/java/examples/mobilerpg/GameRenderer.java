@@ -38,7 +38,7 @@ public class GameRenderer implements GLSurfaceView.Renderer {
         GLES20.glClear(GLES20.GL_COLOR_BUFFER_BIT);
 
         //Set the camera position
-        Matrix.setLookAtM(mViewMatrix, 0, 0, 0, -3, 0f, 0f, 0f, 0f, 1.0f, 0.0f);
+        Matrix.setLookAtM(mViewMatrix, 0, 0, -2, -3, 0f, 0f, 0f, 0f, 1.0f, 0.0f);
 
         //Calculate the projection and view transformation
         //the result is stored in mMVPMatrix
@@ -49,18 +49,21 @@ public class GameRenderer implements GLSurfaceView.Renderer {
         float translateX = (float) Math.sin((double) time/400) * 0.5f;
         float translateY = (float) Math.cos((double) time/400) * 0.5f;
 
-        Matrix.setRotateM(mRotationMatrix, 0, angle, 0, 0, -1.0f);
-        Matrix.setIdentityM(scratch, 0);
-        Matrix.translateM(scratch, 0, 0, translateY, translateX);
+        mT.set_position(translateX, translateY, 0);
+        mT.set_rotation(angle, 0.0f, 0.0f, -1.0f);
 
-        Matrix.multiplyMM(scratch2, 0, mMVPMatrix, 0, scratch, 0);
-        //combine the rotation matrix with the projection and camera view
-        //Note that the mMVPMatrix factor *must be first* in order
-        //for the matrix multiplication product to be correct.
-        Matrix.multiplyMM(model_view_matrix, 0, scratch2, 0, mRotationMatrix, 0);
+//            Matrix.setRotateM(mRotationMatrix, 0, angle, 0, 0, -1.0f);
+//            Matrix.setIdentityM(scratch, 0);
+//            Matrix.translateM(scratch, 0, 0, translateY, translateX);
+
+//            Matrix.multiplyMM(scratch2, 0, mMVPMatrix, 0, scratch, 0);
+//            //combine the rotation matrix with the projection and camera view
+//            //Note that the mMVPMatrix factor *must be first* in order
+//            //for the matrix multiplication product to be correct.
+//            Matrix.multiplyMM(model_view_matrix, 0, scratch2, 0, mRotationMatrix, 0);
 
         //Draw Triangle
-        mT.draw(model_view_matrix);
+        mT.draw(mMVPMatrix);
     }
 
     //mMVPMatrix is an abbreviation for "Model View Projection Matrix"
