@@ -1,5 +1,7 @@
 package examples.mobilerpg;
 
+
+import android.app.Activity;
 import android.content.Context;
 import android.graphics.BitmapFactory;
 import android.graphics.Canvas;
@@ -12,10 +14,13 @@ import android.view.SurfaceView;
  */
 public class GamePanel extends SurfaceView implements SurfaceHolder.Callback {
     private MainThread thread;
-    private Player player;
-    private final int HEIGHT = 846;
-    private final int WIDTH = 400;
+    public Player player;
+    private Background bg;
+    public static final int HEIGHT = 846;
+    public static final int WIDTH = 400;
     public static final int MOVESPEED = -5;
+    public boolean left, right;
+
     public GamePanel(Context context){
         super(context);
 
@@ -25,7 +30,10 @@ public class GamePanel extends SurfaceView implements SurfaceHolder.Callback {
 
         //Make gamePanel focusable to handle events
         setFocusable(true);
+        left = false;
+        right = false;
     }
+
     @Override
     public void surfaceChanged(SurfaceHolder holder, int format, int width, int height) {
 
@@ -45,31 +53,24 @@ public class GamePanel extends SurfaceView implements SurfaceHolder.Callback {
     }
     @Override
     public void surfaceCreated(SurfaceHolder holder){
+        bg = new Background(BitmapFactory.decodeResource(getResources(), R.drawable.testbg));
       player = new Player(BitmapFactory.decodeResource(getResources(), R.drawable.player),100,100,1);
+        player.setPlaying(true);
       thread.setRunning(true);
         thread.start();
     }
     @Override
     public boolean onTouchEvent(MotionEvent event){
-        if(event.getAction() == MotionEvent.ACTION_DOWN){
-            if(!player.getPlaying()){
-                player.setPlaying(true);
-            }
-            else {
-                player.setUp(true);
-            }
-            return true;
-        }
-        if(event.getAction() == MotionEvent.ACTION_UP){
-            player.setUp(false);
-            return true;
-        }
         return super.onTouchEvent(event);
     }
+
     public void update() {
+        bg.update();
         if(player.getPlaying()){
-            player.update();
+            player.update(left,right);
         }
+        this.left = false;
+        this.right = false;
     }
 
     @Override
@@ -80,6 +81,7 @@ public class GamePanel extends SurfaceView implements SurfaceHolder.Callback {
         if(canvas != null) {
             final int saveState = canvas.save();
             canvas.scale(scaleFactorX, scaleFactorY);
+            bg.draw(canvas);
             player.draw(canvas);
             canvas.restoreToCount(saveState);
         }

@@ -8,7 +8,6 @@ import android.view.SurfaceHolder;
  */
 public class MainThread extends Thread {
     private int FPS = 30;
-    private double avgFPS;
     private SurfaceHolder surfaceHolder;
     private GamePanel gamePanel;
     private boolean running;
@@ -57,10 +56,8 @@ public class MainThread extends Thread {
             totalTime += System.nanoTime()-startTime;
             frameCount++;
             if(frameCount == FPS) {
-                avgFPS = 1000/((totalTime/frameCount)/10000000);
                 frameCount = 0;
                 totalTime = 0;
-                System.out.println(avgFPS);
             }
         }
     }

@@ -13,15 +13,15 @@ public class Player extends GameObject {
     private int morale;
     private double dya;
     private boolean dead;
-    private boolean up;
+    private boolean down;
     private boolean playing;
     private Animation anim = new Animation();
     private long startTime;
 
     public Player(Bitmap res, int w, int h, int frames) {
         sprite = res;
-        x = 100;
-        y = getHeight() / 2;
+        x = 250;
+        y = 250;
         dy = 0;
         money = 1000;
         morale = 10;
@@ -37,28 +37,22 @@ public class Player extends GameObject {
     }
 
     public void setUp(boolean b) {
-       up = b;
+        down = b;
     }
 
-    public void update() {
+    public void update(boolean left, boolean right) {
         long elapsed = (System.nanoTime() - startTime) / 1000000;
         if (elapsed > 100) {
             money++;
             startTime = System.nanoTime();
         }
-        if (up) {
-            dy = (int) (dya -= 1.1);
-        } else {
-            dy = (int) (dya += 1.1);
+        if (left) {
+            x-=10;
         }
-        if (dy > 14) {
-            dy = 14;
+        if(right){
+            x+=10;
         }
-        if (dy < -14) {
-            dy = -14;
-        }
-        y += dy * 2;
-        dy = 0;
+
     }
 
     public void draw(Canvas canvas) {
