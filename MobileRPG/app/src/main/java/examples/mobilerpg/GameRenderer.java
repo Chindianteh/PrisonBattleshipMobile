@@ -4,6 +4,7 @@ import android.opengl.GLES20;
 import android.opengl.GLSurfaceView;
 import android.opengl.Matrix;
 import android.os.SystemClock;
+import android.util.Log;
 
 import javax.microedition.khronos.egl.EGLConfig;
 import javax.microedition.khronos.opengles.GL10;
@@ -12,6 +13,8 @@ import javax.microedition.khronos.opengles.GL10;
  * Created by Arjun on 10/14/2015.
  */
 public class GameRenderer implements GLSurfaceView.Renderer {
+
+    private static final String TAG = "GameRenderer";
 
     private Triangle mT;
 
@@ -25,6 +28,9 @@ public class GameRenderer implements GLSurfaceView.Renderer {
     public void onSurfaceCreated(GL10 unused, EGLConfig config){
         //Set the background frame color
         GLES20.glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+
+        GLES20.glEnable(GLES20.GL_CULL_FACE);
+        GLES20.glEnable(GLES20.GL_DEPTH_TEST);
 
         //initialize a triangle
         mT = new Triangle();
@@ -89,6 +95,60 @@ public class GameRenderer implements GLSurfaceView.Renderer {
         GLES20.glCompileShader(shader);
 
         return shader;
+    }
+
+    /**
+     * Helper function to compile and link a program.
+     *
+     * @param vertexShaderHandle An OpenGL handle to an already-compiled vertex shader.
+     * @param fragmentShaderHandle An OpenGL handle to an already-compiled fragment shader.
+     * @param attributes Attributes that need to be bound to the program.
+     * @return An OpenGL handle to the program.
+     */
+    public static int createAndLinkProgram(final int vertexShaderHandle, final int fragmentShaderHandle, final String[] attributes)
+    {
+        int programHandle = GLES20.glCreateProgram();
+
+        if (programHandle != 0)
+        {
+            // Bind the vertex shader to the program.
+            GLES20.glAttachShader(programHandle, vertexShaderHandle);
+
+            // Bind the fragment shader to the program.
+            GLES20.glAttachShader(programHandle, fragmentShaderHandle);
+
+            // Bind attributes
+            if (attributes != null)
+            {
+                final int size = attributes.length;
+                for (int i = 0; i < size; i++)
+                {
+                    GLES20.glBindAttribLocation(programHandle, i, attributes[i]);
+                }
+            }
+
+            // Link the two shaders together into a program.
+            GLES20.glLinkProgram(programHandle);
+
+            // Get the link status.
+            final int[] linkStatus = new int[1];
+            GLES20.glGetProgramiv(programHandle, GLES20.GL_LINK_STATUS, linkStatus, 0);
+
+            // If the link failed, delete the program.
+            if (linkStatus[0] == 0)
+            {
+                Log.e(TAG, "Error compiling program: " + GLES20.glGetProgramInfoLog(programHandle));
+                GLES20.glDeleteProgram(programHandle);
+                programHandle = 0;
+            }
+        }
+
+        if (programHandle == 0)
+        {
+            throw new RuntimeException("Error creating program.");
+        }
+
+        return programHandle;
     }
 
 }
