@@ -17,6 +17,7 @@ public class GameRenderer implements GLSurfaceView.Renderer {
     private static final String TAG = "GameRenderer";
 
     private Triangle mT;
+    private Cube mC;
 
     private float[] mRotationMatrix = new float[16];
 
@@ -34,6 +35,7 @@ public class GameRenderer implements GLSurfaceView.Renderer {
 
         //initialize a triangle
         mT = new Triangle();
+        mC = new Cube();
     }
 
     public void onDrawFrame(GL10 unused){
@@ -44,7 +46,7 @@ public class GameRenderer implements GLSurfaceView.Renderer {
         GLES20.glClear(GLES20.GL_COLOR_BUFFER_BIT);
 
         //Set the camera position
-        Matrix.setLookAtM(mViewMatrix, 0, 0, -2, -3, 0f, 0f, 0f, 0f, 1.0f, 0.0f);
+        Matrix.setLookAtM(mViewMatrix, 0, 0, 0, -5f, 0f, 0f, 0f, 0f, 1.0f, 0.0f);
 
         //Calculate the projection and view transformation
         //the result is stored in mMVPMatrix
@@ -56,7 +58,7 @@ public class GameRenderer implements GLSurfaceView.Renderer {
         float translateY = (float) Math.cos((double) time/400) * 0.5f;
 
         mT.set_position(translateX, translateY, 0);
-        mT.set_rotation(angle, 0.0f, 0.0f, -1.0f);
+        mC.set_rotation(angle, 0.0f, 0.0f, -1.0f);
 
 //            Matrix.setRotateM(mRotationMatrix, 0, angle, 0, 0, -1.0f);
 //            Matrix.setIdentityM(scratch, 0);
@@ -69,7 +71,10 @@ public class GameRenderer implements GLSurfaceView.Renderer {
 //            Matrix.multiplyMM(model_view_matrix, 0, scratch2, 0, mRotationMatrix, 0);
 
         //Draw Triangle
-        mT.draw(mMVPMatrix);
+        //mT.draw(mMVPMatrix);
+        mC.drawCube(mViewMatrix, mProjectionMatrix, angle);
+
+        mC.drawLight(mViewMatrix, mProjectionMatrix);
     }
 
     //mMVPMatrix is an abbreviation for "Model View Projection Matrix"
@@ -82,7 +87,7 @@ public class GameRenderer implements GLSurfaceView.Renderer {
 
         //this projection matrix is applied to object coordinates
         //in the onDrawFrame() method
-        Matrix.frustumM(mProjectionMatrix, 0, -ratio, ratio, -1, 1, 3, 7);
+        Matrix.frustumM(mProjectionMatrix, 0, -ratio, ratio, -1, 1, 1, 10);
     }
 
     public static int loadShader(int type, String shaderCode){

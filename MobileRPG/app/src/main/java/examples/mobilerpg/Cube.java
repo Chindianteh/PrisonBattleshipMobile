@@ -6,6 +6,7 @@ import android.opengl.Matrix;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.FloatBuffer;
+import java.sql.ParameterMetaData;
 
 /**
  * Created by Arjun on 10/30/2015.
@@ -22,7 +23,11 @@ public class Cube {
 
     private final int vertexCount = 36;
 
+    private float[] mLightModelPos = new float[]{0.0f, 0.0f, 0.0f, 1.0f};
+    private float[] mLightWorldPos = new float[4];
+    private float[] mLightEyePos = new float[4];
     private float[] modelMatrix;
+    private float[] lightModelMatrix = new float[16];
     private float[] position;//these should affect the model matrix?
     private float[] rotation;
 
@@ -191,6 +196,7 @@ public class Cube {
             };
 
     private final int cVertexProgram;
+    private final int cPointProgram;
     private int mMVPMatrixHandle;
     private int mMVMatrixHandle;
     private int mLightPosHandle;
@@ -239,6 +245,25 @@ public class Cube {
                 "gl_FragColor = v_Color;" + //pass color directly through the pipeline
             "}";
 
+    // Define a simple shader program for our point.
+    private final String pointVertexShaderCode =
+            "uniform mat4 u_MVPMatrix;      \n"
+            +	"attribute vec4 a_Position;     \n"
+            + "void main()                    \n"
+            + "{                              \n"
+            + "   gl_Position = u_MVPMatrix   \n"
+            + "               * a_Position;   \n"
+            + "   gl_PointSize = 5.0;         \n"
+            + "}                              \n";
+
+    private final String pointFragmentShaderCode =
+            "precision mediump float;       \n"
+            + "void main()                    \n"
+            + "{                              \n"
+            + "   gl_FragColor = vec4(1.0,    \n"
+            + "   1.0, 1.0, 1.0);             \n"
+            + "}                              \n";
+
     public Cube(){
         positionBuffer = ByteBuffer.allocateDirect(cubePositionData.length * bytePerFloat).order(ByteOrder.nativeOrder()).asFloatBuffer();
         positionBuffer.put(cubePositionData).position(0);
@@ -249,23 +274,37 @@ public class Cube {
         normalBuffer = ByteBuffer.allocateDirect(cubeNormalData.length * bytePerFloat).order(ByteOrder.nativeOrder()).asFloatBuffer();
         colorBuffer.put(cubeNormalData).position(0);
 
-        int vertexShader = GameRenderer.loadShader(GLES20.GL_VERTEX_SHADER,
-                vertexShaderCode);
-        int fragmentShader = GameRenderer.loadShader(GLES20.GL_FRAGMENT_SHADER,
-                fragmentShaderCode);
+        int vertexShader = GameRenderer.loadShader(GLES20.GL_VERTEX_SHADER, vertexShaderCode);
+        int fragmentShader = GameRenderer.loadShader(GLES20.GL_FRAGMENT_SHADER, fragmentShaderCode);
+        int pointVertexShader = GameRenderer.loadShader(GLES20.GL_VERTEX_SHADER, pointVertexShaderCode);
+        int pointFragmentShader = GameRenderer.loadShader(GLES20.GL_FRAGMENT_SHADER, pointFragmentShaderCode);
 
         cVertexProgram = GameRenderer.createAndLinkProgram(vertexShader, fragmentShader, null);
+        cPointProgram = GameRenderer.createAndLinkProgram(pointVertexShader, pointFragmentShader, new String[]{"a_Position"} );
 
         position = new float[3];
         rotation = new float[16];
         modelMatrix = new float[16];
 
+
     }
 
-    public void drawCube(float[] mMVPMatrix){
+    public void drawCube(float[] VMatrix, float[] PMatrix, float angleInDegrees) {
+        float[] mMVPMatrix = new float[16];
+
+        GLES20.glUseProgram(cVertexProgram);
+
+        Matrix.setIdentityM(lightModelMatrix, 0);
+        Matrix.translateM(lightModelMatrix, 0, 0.0f, 0.0f, -5.0f);
+        Matrix.rotateM(lightModelMatrix, 0, angleInDegrees, 0.0f, 1.0f, 0.0f);
+        Matrix.translateM(lightModelMatrix, 0, 0.0f, 0.0f, 2.0f);
+
         mPositionHandle = GLES20.glGetAttribLocation(cVertexProgram, "a_Position");
         mColorHandle = GLES20.glGetAttribLocation(cVertexProgram, "a_Color");
         mNormalHandle = GLES20.glGetAttribLocation(cVertexProgram, "a_Normal");
+        mMVMatrixHandle = GLES20.glGetAttribLocation(cVertexProgram, "u_MVMatrix");
+        mMVPMatrixHandle = GLES20.glGetAttribLocation(cVertexProgram, "u_MVPMatrix");
+        mLightPosHandle = GLES20.glGetAttribLocation(cVertexProgram, "u_LightPos");
 
         positionBuffer.position(0);
         GLES20.glVertexAttribPointer(mPositionHandle, mPositionDataSize, GLES20.GL_FLOAT, false, 0, positionBuffer);
@@ -279,10 +318,36 @@ public class Cube {
         GLES20.glVertexAttribPointer(mNormalHandle, mNormalDataSize, GLES20.GL_FLOAT, false, 0, normalBuffer);
         GLES20.glEnableVertexAttribArray(mNormalHandle);
 
+        Matrix.multiplyMM(mMVPMatrix, 0, VMatrix, 0, modelMatrix, 0);
+        GLES20.glUniformMatrix4fv(mMVMatrixHandle, 1, false, mMVPMatrix, 0);
 
+        Matrix.multiplyMM(mMVPMatrix, 0, PMatrix, 0, mMVPMatrix, 0);
         GLES20.glUniformMatrix4fv(mMVPMatrixHandle, 1, false, mMVPMatrix, 0);
 
+        Matrix.multiplyMV(mLightWorldPos, 0, lightModelMatrix, 0, mLightModelPos, 0);
+        Matrix.multiplyMV(mLightEyePos, 0, VMatrix, 0, mLightWorldPos, 0);
+
+        GLES20.glUniform3f(mLightPosHandle, mLightEyePos[0], mLightEyePos[1], mLightEyePos[2]);
+
         GLES20.glDrawArrays(GLES20.GL_TRIANGLES, 0, vertexCount);
+    }
+
+    public void drawLight(float[] Vmatrix, float[] Pmatrix){
+        final int pointMVPMatrixHandle = GLES20.glGetUniformLocation(cPointProgram, "u_MVPMatrix");
+        final int pointPositionHandle = GLES20.glGetUniformLocation(cPointProgram, "a_Position");
+        float[] mMVPMatrix = new float[16];
+
+        GLES20.glUseProgram(cPointProgram);
+
+        GLES20.glVertexAttrib3f(pointPositionHandle, mLightModelPos[0], mLightModelPos[1], mLightModelPos[2]);
+        GLES20.glDisableVertexAttribArray(pointPositionHandle);
+
+        Matrix.multiplyMM(mMVPMatrix, 0, Vmatrix, 0, lightModelMatrix, 0);
+        Matrix.multiplyMM(mMVPMatrix, 0, Pmatrix, 0, mMVPMatrix, 0);
+
+        GLES20.glUniformMatrix4fv(pointMVPMatrixHandle, 1, false, mMVPMatrix, 0);
+
+        GLES20.glDrawArrays(GLES20.GL_POINTS, 0, 1);
     }
     public void set_position(float x, float y, float z){
         position[0] = x;
