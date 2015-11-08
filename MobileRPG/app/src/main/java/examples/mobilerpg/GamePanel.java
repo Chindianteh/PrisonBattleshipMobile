@@ -11,7 +11,7 @@ import android.view.SurfaceView;
  */
 public class GamePanel extends GLSurfaceView{
 
-    private final GameRenderer mRenderer;
+    private final Renderer mRenderer;
 
     public GamePanel(Context context){
         super(context);
@@ -19,7 +19,8 @@ public class GamePanel extends GLSurfaceView{
         //Create an OpenGL ES 2.0 Context
         setEGLContextClientVersion(2);
 
-        mRenderer = new GameRenderer();
+        //mRenderer = new GameRenderer();
+        mRenderer = new tutorialRenderer();
 
         //Set the Renderer for drawing on the GLSurfaceView
         setRenderer(mRenderer);

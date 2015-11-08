@@ -279,7 +279,7 @@ public class Cube {
         int pointVertexShader = GameRenderer.loadShader(GLES20.GL_VERTEX_SHADER, pointVertexShaderCode);
         int pointFragmentShader = GameRenderer.loadShader(GLES20.GL_FRAGMENT_SHADER, pointFragmentShaderCode);
 
-        cVertexProgram = GameRenderer.createAndLinkProgram(vertexShader, fragmentShader, null);
+        cVertexProgram = GameRenderer.createAndLinkProgram(vertexShader, fragmentShader, new String[]{"a_Position", "a_Color", "a_Normal"});
         cPointProgram = GameRenderer.createAndLinkProgram(pointVertexShader, pointFragmentShader, new String[]{"a_Position"} );
 
         position = new float[3];
